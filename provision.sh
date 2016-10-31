@@ -19,6 +19,9 @@ then
     exit 1
 fi
 
+OS=$(gawk -F= '/^NAME/{print $2}' /etc/os-release)
+
+echo "OS=$OS"
 echo "APP_ROOT=$APP_ROOT"
 
 usage() {
@@ -49,6 +52,11 @@ activate_venv () {
 }
 
 install_deps(){
+    [[ "$OS" =~ "Debian" ]] && install_deps_debian
+    [[ "$OS" =~ "CentOS" ]] && install_deps_centos
+}
+
+install_deps_debian(){
     echo deb http://nginx.org/packages/ubuntu/ trusty nginx > /etc/apt/sources.list.d/nginx.list
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys ABF5BD827BD9BF62
     apt-get update
@@ -66,6 +74,27 @@ install_deps(){
             python-openssl \
             python-pip \
             python-software-properties
+}
+
+install_deps_centos(){
+    yum install -y epel-release
+    yum check-update
+    yum install -y install \
+            curl \
+            libxml2-devel \
+            libxslt-devel \
+            mesa-libGL-devel \
+            # libgl1-mesa-glx \
+            mesa-libglapi \
+            mesa-dri-drivers \
+            nginx python-devel \
+            openssl \
+            openssl-devel \
+            # python-mysql.connector \
+            # python-numpy \
+            # python-openssl \
+            python-pip
+            # python-software-properties
 }
 
 install_python_deps(){
@@ -102,6 +131,7 @@ cleanup() {
 }
 
 configure_nginx(){
+    [ -f /etc/nginx/nginx.conf ] && mv /etc/nginx/nginx.conf /etc/nginx/nginx.conf.orig
     ln -sf "$APP_ROOT/nginx/nginx.conf" /etc/nginx/nginx.conf
 }
 
@@ -136,4 +166,3 @@ while [ $# -gt 0 ]; do
     "$1"
     shift
 done
-
